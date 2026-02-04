@@ -4,16 +4,16 @@ const win = Ti.UI.createWindow({
     backgroundColor: '#000'
 });
 
-// Array de cores para as páginas
+// Array of colors for pages
 const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
 
-// Criar views iniciais
+// Create initial views
 const initialViews = [];
 for (let i = 0; i < 5; i++) {
     initialViews.push(createPageView(i, colors[i % colors.length]));
 }
 
-// Criar o VerticalPager
+// Create the VerticalPager
 const pager = VerticalPager.createView({
     top: 0,
     left: 0,
@@ -23,44 +23,44 @@ const pager = VerticalPager.createView({
     cacheSize: 3,
     pageIndicator: {
         currentPageIndicatorColor: colors[0],
-        pageIndicatorColor: colors[0] + '30', // Efeito vidro
+        pageIndicatorColor: colors[0] + '30', // Glass effect
         type: VerticalPager.INDICATOR_TYPE_VERTICAL,
         right: 16,
         bottom: 100
     }
 });
 
-// EVENTO: scrollstart
+// EVENT: scrollstart
 pager.addEventListener('scrollstart', function(e) {
-    console.log('📱 SCROLLSTART - Página atual:', e.currentPage);
+    console.log('📱 SCROLLSTART - Current page:', e.currentPage);
 });
 
-// EVENTO: scroll
+// EVENT: scroll
 pager.addEventListener('scroll', function(e) {
     console.log('📜 SCROLL - Offset:', e.offset.toFixed(2));
 });
 
-// EVENTO: scrollend
+// EVENT: scrollend
 pager.addEventListener('scrollend', function(e) {
-    console.log('🛑 SCROLLEND - Parou na página:', e.currentPage);
+    console.log('🛑 SCROLLEND - Stopped at page:', e.currentPage);
     updatePageLabel();
 });
 
-// EVENTO: change
+// EVENT: change
 pager.addEventListener('change', function(e) {
-    console.log('🔄 CHANGE - Mudou de', e.previousPage, 'para', e.currentPage);
+    console.log('🔄 CHANGE - Changed from', e.previousPage, 'to', e.currentPage);
     updatePageLabel();
     
-    // 🎨 Atualiza cores do pageIndicator (efeito vidro)
+    // 🎨 Update pageIndicator colors (glass effect)
     const currentColor = colors[e.currentPage % colors.length];
-    pager.pageIndicatorColor = currentColor + '30';         // Transparente
-    pager.currentPageIndicatorColor = currentColor;         // Sólido
+    pager.pageIndicatorColor = currentColor + '30';         // Transparent
+    pager.currentPageIndicatorColor = currentColor;         // Solid
 });
 
 win.add(pager);
 
 // ====================================
-// CONTROLES NA PARTE INFERIOR
+// BOTTOM CONTROLS
 // ====================================
 
 const controlsContainer = Ti.UI.createView({
@@ -70,23 +70,23 @@ const controlsContainer = Ti.UI.createView({
     backgroundColor: '#1a1a1a'
 });
 
-// Label mostrando página atual
+// Label showing current page
 const pageLabel = Ti.UI.createLabel({
     top: 5,
-    text: 'Página: 0 / 4',
+    text: 'Page: 0 / 4',
     color: '#fff',
     font: { fontSize: 14, fontWeight: 'bold' }
 });
 controlsContainer.add(pageLabel);
 
-// Container dos botões
+// Buttons container
 const buttonsContainer = Ti.UI.createView({
     bottom: 5,
     height: 50,
     layout: 'horizontal'
 });
 
-// Botão: Página Anterior
+// Button: Previous Page
 const btnPrev = Ti.UI.createButton({
     left: 5,
     width: 70,
@@ -105,7 +105,7 @@ btnPrev.addEventListener('click', function() {
 });
 buttonsContainer.add(btnPrev);
 
-// Botão: Próxima Página
+// Button: Next Page
 const btnNext = Ti.UI.createButton({
     left: 5,
     width: 70,
@@ -125,7 +125,7 @@ btnNext.addEventListener('click', function() {
 });
 buttonsContainer.add(btnNext);
 
-// Botão: Ir para Página 0
+// Button: Go to First Page
 const btnGoToFirst = Ti.UI.createButton({
     left: 5,
     width: 70,
@@ -141,7 +141,7 @@ btnGoToFirst.addEventListener('click', function() {
 });
 buttonsContainer.add(btnGoToFirst);
 
-// Botão: Adicionar View
+// Button: Add View
 const btnAdd = Ti.UI.createButton({
     left: 5,
     width: 70,
@@ -157,11 +157,11 @@ btnAdd.addEventListener('click', function() {
     const newView = createPageView(totalPages, colors[totalPages % colors.length]);
     pager.addView(newView);
     updatePageLabel();
-    Ti.API.info('✅ View adicionada! Total:', totalPages + 1);
+    Ti.API.info('✅ View added! Total:', totalPages + 1);
 });
 buttonsContainer.add(btnAdd);
 
-// Botão: Remover Última View
+// Button: Remove Last View
 const btnRemove = Ti.UI.createButton({
     left: 5,
     width: 70,
@@ -177,9 +177,9 @@ btnRemove.addEventListener('click', function() {
     if (totalPages > 1) {
         pager.removeView(totalPages - 1);
         updatePageLabel();
-        Ti.API.info('🗑️ View removida! Total:', totalPages - 1);
+        Ti.API.info('🗑️ View removed! Total:', totalPages - 1);
     } else {
-        alert('Precisa ter pelo menos 1 página!');
+        alert('Need at least 1 page!');
     }
 });
 buttonsContainer.add(btnRemove);
@@ -188,7 +188,7 @@ controlsContainer.add(buttonsContainer);
 win.add(controlsContainer);
 
 // ====================================
-// FUNÇÕES AUXILIARES
+// HELPER FUNCTIONS
 // ====================================
 
 function createPageView(index, backgroundColor) {
@@ -203,7 +203,7 @@ function createPageView(index, backgroundColor) {
     
     const title = Ti.UI.createLabel({
         top: 100,
-        text: `PÁGINA ${index}`,
+        text: `PAGE ${index}`,
         color: '#fff',
         font: { fontSize: 48, fontWeight: 'bold' },
         textAlign: 'center'
@@ -212,14 +212,14 @@ function createPageView(index, backgroundColor) {
     
     const subtitle = Ti.UI.createLabel({
         top: 20,
-        text: `Swipe para cima ou para baixo\npara navegar`,
+        text: `Swipe up or down\nto navigate`,
         color: '#ffffffcc',
         font: { fontSize: 16 },
         textAlign: 'center'
     });
     contentView.add(subtitle);
     
-    // Emoji grande
+    // Large emoji
     const emoji = Ti.UI.createLabel({
         top: 40,
         text: getEmoji(index),
@@ -228,10 +228,10 @@ function createPageView(index, backgroundColor) {
     });
     contentView.add(emoji);
     
-    // Info adicional
+    // Additional info
     const info = Ti.UI.createLabel({
         top: 40,
-        text: `Esta é a view #${index}\nCache Size: 3 páginas\nMemória otimizada! 🚀`,
+        text: `This is view #${index}\nCache Size: 3 pages\nMemory optimized! 🚀`,
         color: '#ffffffaa',
         font: { fontSize: 14 },
         textAlign: 'center'
@@ -251,7 +251,7 @@ function getEmoji(index) {
 function updatePageLabel() {
     const currentPage = pager.currentPage || 0;
     const totalPages = pager.views ? pager.views.length : 0;
-    pageLabel.text = `Página: ${currentPage} / ${totalPages - 1}`;
+    pageLabel.text = `Page: ${currentPage} / ${totalPages - 1}`;
 }
 
 win.open();
