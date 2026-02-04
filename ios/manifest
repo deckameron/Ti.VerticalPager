@@ -1,0 +1,19 @@
+#
+# this is your module manifest and used by Titanium
+# during compilation, packaging, distribution, etc.
+#
+version: 1.0.0
+apiversion: 2
+architectures: arm64 x86_64
+mac: false
+description: Ti.VerticalPager
+author: Douglas Alves
+license: MIT
+copyright: Copyright (c) 2026 by Upflix Inc.
+
+# these should not be edited
+name: Ti.VerticalPager
+moduleid: ti.verticalpager
+guid: 5f8f0ddd-e9c7-4a1a-bba8-3e6c5d790628
+platform: iphone
+minsdk: 13.1.0.GA
