@@ -67,7 +67,10 @@ const pager = VerticalPager.createView({
 });
 
 pager.addEventListener('change', (e) => {
+    console.log(`Changed from page ${e.previousPage}`);
+    console.log(`Changed from view ${e.previousView}`);
     console.log(`Changed to page ${e.currentPage}`);
+    console.log(`Changed to view ${e.currentView}`);
 });
 
 win.add(pager);
@@ -160,13 +163,16 @@ pager.addEventListener('scrollend', (e) => {
 Fired when the page changes.
 ```javascript
 pager.addEventListener('change', (e) => {
-    console.log(`Changed from ${e.previousPage} to ${e.currentPage}`);
+    console.log(`Changed from index ${e.previousPage} to ${e.currentPage}`);
+    console.log(`Changed from view ${e.previousView} to ${e.currentView}`);
 });
 ```
 
 **Event properties:**
 - `currentPage` (Number): New page index
 - `previousPage` (Number): Previous page index
+- `currentView` (Ti.UI.View): New view page object
+- `previousView` (Ti.UI.View): Previous view page object
 
 ### Constants
 

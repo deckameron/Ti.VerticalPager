@@ -344,15 +344,28 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
     if (newPage != oldPage && newPage >= 0 && newPage < proxy.viewProxies.count) {
         proxy.currentPage = newPage;
         
+        // Atualiza o pageControl
         if (self.pageControl) {
             self.pageControl.currentPage = newPage;
         }
         
         if ([self.proxy _hasListeners:@"change"]) {
-            [self.proxy fireEvent:@"change" withObject:@{
+            // Get the view proxies
+            TiViewProxy *currentView = proxy.viewProxies[newPage];
+            TiViewProxy *previousView = (oldPage >= 0 && oldPage < proxy.viewProxies.count) ? proxy.viewProxies[oldPage] : nil;
+            
+            NSMutableDictionary *eventDict = [NSMutableDictionary dictionaryWithDictionary:@{
                 @"currentPage": @(newPage),
-                @"previousPage": @(oldPage)
+                @"previousPage": @(oldPage),
+                @"currentView": currentView
             }];
+            
+            // Only add previousView if it exists
+            if (previousView) {
+                [eventDict setObject:previousView forKey:@"previousView"];
+            }
+            
+            [self.proxy fireEvent:@"change" withObject:eventDict];
         }
     }
     

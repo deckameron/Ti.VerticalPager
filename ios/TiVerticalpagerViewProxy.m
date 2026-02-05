@@ -76,4 +76,11 @@
     }
 }
 
+#pragma mark - Public Getters
+
+- (NSArray *)views
+{
+    return [NSArray arrayWithArray:self.viewProxies];
+}
+
 @end
