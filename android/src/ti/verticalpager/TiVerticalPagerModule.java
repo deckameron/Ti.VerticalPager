@@ -8,24 +8,23 @@
  */
 package ti.verticalpager;
 
+import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.KrollModule;
 import org.appcelerator.kroll.annotations.Kroll;
 
 import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.kroll.common.Log;
-import org.appcelerator.kroll.common.TiConfig;
 
 
 @Kroll.module(name="TiVerticalPager", id="ti.verticalpager")
 public class TiVerticalPagerModule extends KrollModule
 {
+	@Kroll.constant
+	public static final int INDICATOR_TYPE_HORIZONTAL = 0;
 
-	// Standard Debugging variables
-	private static final String LCAT = "TiVerticalPagerModule";
-	private static final boolean DBG = TiConfig.LOGD;
-
-	// You can define constants with @Kroll.constant, for example:
-	// @Kroll.constant public static final String EXTERNAL_NAME = value;
+	@Kroll.constant
+	public static final int INDICATOR_TYPE_VERTICAL = 1;
+	private static final String LCAT = "TiVerticalPager";
 
 	public TiVerticalPagerModule()
 	{
@@ -35,31 +34,20 @@ public class TiVerticalPagerModule extends KrollModule
 	@Kroll.onAppCreate
 	public static void onAppCreate(TiApplication app)
 	{
-		Log.d(LCAT, "inside onAppCreate");
+		// Module initialization
+		Log.d(LCAT, "onAppCreate - Module initialization");
 		// put module init code that needs to run when the application is created
 	}
 
-	// Methods
 	@Kroll.method
-	public String example()
-	{
-		Log.d(LCAT, "example called");
-		return "hello world";
+	public TiVerticalPagerProxy createView(KrollDict options) {
+		TiVerticalPagerProxy proxy = new TiVerticalPagerProxy();
+
+		if (options != null) {
+			proxy.handleCreationDict(options);
+		}
+
+		return proxy;
 	}
-
-	// Properties
-	@Kroll.getProperty
-	public String getExampleProp()
-	{
-		Log.d(LCAT, "get example property");
-		return "hello world";
-	}
-
-
-	@Kroll.setProperty
-	public void setExampleProp(String value) {
-		Log.d(LCAT, "set example property: " + value);
-	}
-
 }
 

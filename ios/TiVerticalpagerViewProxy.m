@@ -76,7 +76,7 @@
     }
 }
 
-- (void)release:(id)args
+- (void)releaseFromMemory:(id)args
 {
     TiThreadPerformOnMainThread(^{
         TiVerticalpagerView *view = (TiVerticalpagerView *)[self view];

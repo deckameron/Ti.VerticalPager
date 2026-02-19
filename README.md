@@ -127,6 +127,12 @@ Removes the view at the specified index.
 pager.removeView(2);
 ```
 
+#### `releaseFromMemory(index)`
+Cleans the entire VerticalPager and its children from memory.
+```javascript
+pager.releaseFromMemory();
+```
+
 ### Events
 
 #### `scrollstart`
