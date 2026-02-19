@@ -40,21 +40,48 @@ public class TiVerticalPagerView extends TiUIView {
         super(proxy);
         this.pagerProxy = proxy;
 
+        Log.d(TAG, "VerticalpagerView constructor called");
+
         if (proxy.getActivity() == null) {
             Log.e(TAG, "Activity is null in constructor");
             return;
         }
 
-        // Create container
         containerLayout = new FrameLayout(proxy.getActivity());
-
-        // Setup ViewPager2
         setupViewPager();
-
-        // Add to container
         containerLayout.addView(viewPager);
-
         setNativeView(containerLayout);
+
+        Log.d(TAG, "View setup complete, checking for initial properties");
+
+        // Process views if they were set before view creation
+        if (proxy.hasProperty("views")) {
+            Log.d(TAG, "Has 'views' property, reloading data");
+            reloadData();
+        }
+
+        // Process page indicator
+        if (proxy.hasProperty("pageIndicator")) {
+            Log.d(TAG, "Has 'pageIndicator' property, processing...");
+            Object config = proxy.getProperty("pageIndicator");
+            Log.d(TAG, "PageIndicator config: " + config);
+            Log.d(TAG, "PageIndicator config class: " + (config != null ? config.getClass().getName() : "null"));
+            setPageIndicator(config);
+        } else {
+            Log.w(TAG, "NO 'pageIndicator' property found!");
+        }
+
+        if (proxy.hasProperty("pageIndicatorColor")) {
+            Log.d(TAG, "Has 'pageIndicatorColor' property");
+            setPageIndicatorColor(proxy.getProperty("pageIndicatorColor"));
+        }
+
+        if (proxy.hasProperty("currentPageIndicatorColor")) {
+            Log.d(TAG, "Has 'currentPageIndicatorColor' property");
+            setCurrentPageIndicatorColor(proxy.getProperty("currentPageIndicatorColor"));
+        }
+
+        Log.d(TAG, "VerticalpagerView constructor finished");
     }
 
     private void setupViewPager() {
@@ -88,6 +115,10 @@ public class TiVerticalPagerView extends TiUIView {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
                 super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+
+                if (pageIndicatorView != null && indicatorType == 1 && pageIndicatorView instanceof TiVerticalPagerIndicator) {
+                    ((TiVerticalPagerIndicator) pageIndicatorView).setCurrentPageWithOffset(position, positionOffset);
+                }
 
                 if (isScrolling) {
                     pagerProxy.fireScrollEvent(position, positionOffsetPixels);
@@ -165,38 +196,64 @@ public class TiVerticalPagerView extends TiUIView {
     }
 
     public void setPageIndicator(Object config) {
-        if (!(config instanceof KrollDict)) {
+        Log.d(TAG, "setPageIndicator called on VIEW");
+        Log.d(TAG, "Config: " + config);
+
+        if (config == null) {
+            Log.w(TAG, "Config is null, returning");
             return;
         }
 
-        this.pageIndicatorConfig = (KrollDict) config;
+        // ⬇️⬇️⬇️ CORREÇÃO: Aceita tanto KrollDict quanto HashMap ⬇️⬇️⬇️
+        KrollDict pageIndicatorDict = null;
+
+        if (config instanceof KrollDict) {
+            Log.d(TAG, "Config is KrollDict");
+            pageIndicatorDict = (KrollDict) config;
+        } else if (config instanceof java.util.HashMap) {
+            Log.d(TAG, "Config is HashMap, converting to KrollDict");
+            @SuppressWarnings("unchecked")
+            java.util.HashMap<String, Object> hashMap = (java.util.HashMap<String, Object>) config;
+            pageIndicatorDict = new KrollDict(hashMap);
+        } else {
+            Log.e(TAG, "Config is neither KrollDict nor HashMap! Type: " + config.getClass().getName());
+            return;
+        }
+
+        this.pageIndicatorConfig = pageIndicatorDict;
+        Log.d(TAG, "PageIndicator config keys: " + pageIndicatorConfig.keySet());
 
         cleanupPageIndicator();
 
-        // Remove old indicator
-        if (pageIndicatorView != null) {
-            containerLayout.removeView(pageIndicatorView);
-            pageIndicatorView = null;
-        }
-
-        // Get type
         indicatorType = TiConvert.toInt(pageIndicatorConfig.get("type"), 0);
+        Log.d(TAG, "Indicator type: " + indicatorType);
 
-        // Get colors
         if (pageIndicatorConfig.containsKey("pageIndicatorColor")) {
-            pageIndicatorColor = TiConvert.toColor(Objects.requireNonNull(pageIndicatorConfig.get("pageIndicatorColor")).toString());
+            String colorStr = pageIndicatorConfig.getString("pageIndicatorColor");
+            Log.d(TAG, "pageIndicatorColor: " + colorStr);
+            pageIndicatorColor = TiConvert.toColor(colorStr);
         }
 
         if (pageIndicatorConfig.containsKey("currentPageIndicatorColor")) {
-            currentPageIndicatorColor = TiConvert.toColor(Objects.requireNonNull(pageIndicatorConfig.get("currentPageIndicatorColor")).toString());
+            String colorStr = pageIndicatorConfig.getString("currentPageIndicatorColor");
+            Log.d(TAG, "currentPageIndicatorColor: " + colorStr);
+            currentPageIndicatorColor = TiConvert.toColor(colorStr);
         }
 
+        Log.d(TAG, "Creating page indicator, type: " + (indicatorType == 1 ? "VERTICAL" : "HORIZONTAL"));
+
         if (indicatorType == 1) {
-            // Vertical indicator
+            Log.d(TAG, "Calling setupVerticalPageIndicator()");
             setupVerticalPageIndicator();
         } else {
-            // Horizontal indicator (using TabLayout)
+            Log.d(TAG, "Calling setupHorizontalPageIndicator()");
             setupHorizontalPageIndicator();
+        }
+
+        Log.d(TAG, "PageIndicator created: " + (pageIndicatorView != null));
+        if (pageIndicatorView != null) {
+            Log.d(TAG, "PageIndicator visibility: " + pageIndicatorView.getVisibility());
+            Log.d(TAG, "PageIndicator parent: " + pageIndicatorView.getParent());
         }
     }
 
@@ -213,16 +270,29 @@ public class TiVerticalPagerView extends TiUIView {
     }
 
     private void setupVerticalPageIndicator() {
+        Log.d(TAG, "setupVerticalPageIndicator START");
 
         if (pagerProxy.getActivity() == null) {
             Log.e(TAG, "Activity is null, cannot create page indicator");
             return;
         }
 
+        Log.d(TAG, "Creating VerticalPageIndicator...");
         TiVerticalPagerIndicator indicator = new TiVerticalPagerIndicator(pagerProxy.getActivity());
-        indicator.setNumberOfPages(pagerProxy.getViewProxies().size());
-        indicator.setCurrentPage(pagerProxy.getCurrentPage());
+
+        int numPages = pagerProxy.getViewProxies().size();
+        int currentPage = pagerProxy.getCurrentPage();
+
+        Log.d(TAG, "Setting numberOfPages: " + numPages);
+        indicator.setNumberOfPages(numPages);
+
+        Log.d(TAG, "Setting currentPage: " + currentPage);
+        indicator.setCurrentPage(currentPage);
+
+        Log.d(TAG, "Setting pageIndicatorColor: " + pageIndicatorColor);
         indicator.setPageIndicatorColor(pageIndicatorColor);
+
+        Log.d(TAG, "Setting currentPageIndicatorColor: " + currentPageIndicatorColor);
         indicator.setCurrentPageIndicatorColor(currentPageIndicatorColor);
 
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
@@ -230,12 +300,22 @@ public class TiVerticalPagerView extends TiUIView {
                 FrameLayout.LayoutParams.WRAP_CONTENT
         );
 
-        // Position
+        Log.d(TAG, "Positioning indicator...");
         positionPageIndicator(params);
 
+        Log.d(TAG, "Params gravity: " + params.gravity);
+        Log.d(TAG, "Params margins: L=" + params.leftMargin + " T=" + params.topMargin + " R=" + params.rightMargin + " B=" + params.bottomMargin);
+
         indicator.setLayoutParams(params);
+        indicator.setVisibility(View.VISIBLE);
+
         pageIndicatorView = indicator;
+
+        Log.d(TAG, "Adding indicator to container...");
         containerLayout.addView(pageIndicatorView);
+
+        Log.d(TAG, "Indicator added! Child count: " + containerLayout.getChildCount());
+        Log.d(TAG, "setupVerticalPageIndicator DONE");
     }
 
     private void setupHorizontalPageIndicator() {
