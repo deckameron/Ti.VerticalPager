@@ -245,34 +245,72 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
     
     TiVerticalpagerViewProxy *proxy = (TiVerticalpagerViewProxy *)self.proxy;
     
-    if (indexPath.item < proxy.viewProxies.count) {
-        TiViewProxy *viewProxy = proxy.viewProxies[indexPath.item];
-        
+    // ⬇️ PROTEÇÃO 1: Verifica bounds
+    if (indexPath.item < 0 || indexPath.item >= proxy.viewProxies.count) {
+        NSLog(@"[TiVerticalPager] WARNING: Invalid index %ld (total: %lu)",
+              (long)indexPath.item, (unsigned long)proxy.viewProxies.count);
+        return cell;
+    }
+    
+    // ⬇️ PROTEÇÃO 2: Copia referência para variável local
+    TiViewProxy *viewProxy = proxy.viewProxies[indexPath.item];
+    
+    if (viewProxy == nil) {
+        NSLog(@"[TiVerticalPager] WARNING: ViewProxy is nil at index %ld", (long)indexPath.item);
+        return cell;
+    }
+    
+    @try {
+        // Define o parent (importante para o Titanium calcular layouts)
         if (viewProxy.parent == nil) {
             [viewProxy setParent:proxy];
         }
         
+        // Define o tamanho exato da célula
         CGRect cellBounds = cell.contentView.bounds;
         
+        // ⬇️ PROTEÇÃO 3: Verifica se cellBounds é válido
+        if (CGRectIsEmpty(cellBounds) || CGRectIsNull(cellBounds)) {
+            NSLog(@"[TiVerticalPager] WARNING: Invalid cellBounds at index %ld", (long)indexPath.item);
+            return cell;
+        }
+        
+        // Define width e height no layoutProperties
         LayoutConstraint *layoutProperties = [viewProxy layoutProperties];
         layoutProperties->width = TiDimensionDip(cellBounds.size.width);
         layoutProperties->height = TiDimensionDip(cellBounds.size.height);
         layoutProperties->top = TiDimensionDip(0);
         layoutProperties->left = TiDimensionDip(0);
         
+        // Define o sandboxBounds (área onde a view pode desenhar)
         [viewProxy setSandboxBounds:cellBounds];
         
+        // Força o layout (isso vai fazer os filhos calcularem suas posições)
         [viewProxy layoutChildren:NO];
         
+        // Pega a view nativa
         UIView *view = [viewProxy view];
         
-        view.frame = cellBounds;
-        view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        
-        [cell.contentView addSubview:view];
-        [viewProxy layoutChildren:NO];
-        
-        [view layoutIfNeeded];
+        if (view) {
+            // Garante que o frame está correto
+            view.frame = cellBounds;
+            view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+            
+            // Força mais um layout depois de adicionar na hierarquia
+            [cell.contentView addSubview:view];
+            [viewProxy layoutChildren:NO];
+            
+            // Force layout na view nativa também
+            [view layoutIfNeeded];
+        } else {
+            NSLog(@"[TiVerticalPager] WARNING: View is nil for viewProxy at index %ld", (long)indexPath.item);
+        }
+    }
+    @catch (NSException *exception) {
+        NSLog(@"[TiVerticalPager] ERROR in cellForItemAtIndexPath: %@", exception);
+        NSLog(@"[TiVerticalPager] Reason: %@", exception.reason);
+        NSLog(@"[TiVerticalPager] Index: %ld, Total views: %lu",
+              (long)indexPath.item, (unsigned long)proxy.viewProxies.count);
     }
     
     return cell;

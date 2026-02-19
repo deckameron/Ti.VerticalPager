@@ -18,5 +18,6 @@
 - (void)scrollToPage:(id)args;
 - (void)addView:(id)args;
 - (void)removeView:(id)args;
+- (void)release:(id)args;
 
 @end

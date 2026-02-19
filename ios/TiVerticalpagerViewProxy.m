@@ -76,6 +76,19 @@
     }
 }
 
+- (void)release:(id)args
+{
+    TiThreadPerformOnMainThread(^{
+        TiVerticalpagerView *view = (TiVerticalpagerView *)[self view];
+        
+        [view.cachedCells removeAllObjects];
+        
+        [view.collectionView reloadData];
+        
+        NSLog(@"[TiVerticalPager] Memory cleanup executed");
+    }, NO);
+}
+
 #pragma mark - Public Getters
 
 - (NSArray *)views
