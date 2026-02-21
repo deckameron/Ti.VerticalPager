@@ -152,7 +152,7 @@ Fired continuously during scrolling.
 ```javascript
 pager.addEventListener('scroll', (e) => {
     console.log("Scroll - Current page:", e.currentPage);
-    console.log("Scroll - Offset:", scroll_offset);
+    console.log("Scroll - Offset:", e.offset); // dp in iOS | px in Android
     console.log("Scroll - Direction:", e.direction);
 });
 ```
