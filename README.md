@@ -140,7 +140,6 @@ Fired when the user starts scrolling.
 ```javascript
 pager.addEventListener('scrollstart', (e) => {
     console.log('Started scrolling from page:', e.currentPage);
-    console.log('Scrolling direction:', e.direction);
 });
 ```
 

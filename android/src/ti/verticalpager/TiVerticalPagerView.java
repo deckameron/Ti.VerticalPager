@@ -22,7 +22,8 @@ public class TiVerticalPagerView extends TiUIView {
 
     private int lastScrollDirection = 0; // -1 = up, 0 = none, 1 = down
     private int lastScrollPosition = 0;
-    private Handler preloadHandler = new Handler(android.os.Looper.getMainLooper());
+    private float lastPositionOffset = 0f;
+    private final Handler preloadHandler = new Handler(android.os.Looper.getMainLooper());
     private Runnable preloadRunnable;
     private boolean isPreloading = false;
 
@@ -112,6 +113,7 @@ public class TiVerticalPagerView extends TiUIView {
 
                 if (state == ViewPager2.SCROLL_STATE_DRAGGING && !isScrolling) {
                     isScrolling = true;
+                    lastScrollDirection = 0;
                     pagerProxy.fireScrollStartEvent();
                 } else if (state == ViewPager2.SCROLL_STATE_IDLE && isScrolling) {
                     isScrolling = false;
@@ -124,10 +126,25 @@ public class TiVerticalPagerView extends TiUIView {
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
                 super.onPageScrolled(position, positionOffset, positionOffsetPixels);
 
+                if (Math.abs(positionOffset - lastPositionOffset) > 0.001f) {
+                    if (positionOffset > lastPositionOffset) {
+                        // Offset aumentando = scrollando para baixo
+                        lastScrollDirection = 1;
+                    } else if (positionOffset < lastPositionOffset) {
+                        // Offset diminuindo = scrollando para cima
+                        lastScrollDirection = -1;
+                    }
+                    lastPositionOffset = positionOffset;
+                }
+
+                // Se mudou de página completamente
                 if (position != lastScrollPosition) {
-                    lastScrollDirection = position > lastScrollPosition ? 1 : -1;
+                    if (position > lastScrollPosition) {
+                        lastScrollDirection = 1;
+                    } else if (position < lastScrollPosition) {
+                        lastScrollDirection = -1;
+                    }
                     lastScrollPosition = position;
-                    Log.d(TAG, "Scroll direction: " + (lastScrollDirection > 0 ? "DOWN" : "UP"));
                 }
 
                 if (pageIndicatorView != null && indicatorType == 1 && pageIndicatorView instanceof TiVerticalPagerIndicator) {
