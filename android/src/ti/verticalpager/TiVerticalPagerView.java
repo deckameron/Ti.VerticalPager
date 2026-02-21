@@ -1,5 +1,6 @@
 package ti.verticalpager;
 
+import android.os.Handler;
 import android.graphics.Color;
 import android.util.Log;
 import android.view.Gravity;
@@ -18,6 +19,12 @@ import java.util.Objects;
 public class TiVerticalPagerView extends TiUIView {
 
     private static final String TAG = "TiVerticalPagerView";
+
+    private int lastScrollDirection = 0; // -1 = up, 0 = none, 1 = down
+    private int lastScrollPosition = 0;
+    private Handler preloadHandler = new Handler(android.os.Looper.getMainLooper());
+    private Runnable preloadRunnable;
+    private boolean isPreloading = false;
 
     private ViewPager2 viewPager;
     private TiVerticalPagerAdapter adapter;
@@ -109,12 +116,19 @@ public class TiVerticalPagerView extends TiUIView {
                 } else if (state == ViewPager2.SCROLL_STATE_IDLE && isScrolling) {
                     isScrolling = false;
                     handleScrollEnd();
+                    schedulePreloading();
                 }
             }
 
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
                 super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+
+                if (position != lastScrollPosition) {
+                    lastScrollDirection = position > lastScrollPosition ? 1 : -1;
+                    lastScrollPosition = position;
+                    Log.d(TAG, "Scroll direction: " + (lastScrollDirection > 0 ? "DOWN" : "UP"));
+                }
 
                 if (pageIndicatorView != null && indicatorType == 1 && pageIndicatorView instanceof TiVerticalPagerIndicator) {
                     ((TiVerticalPagerIndicator) pageIndicatorView).setCurrentPageWithOffset(position, positionOffset);
@@ -178,6 +192,97 @@ public class TiVerticalPagerView extends TiUIView {
         }
     }
 
+    private void schedulePreloading() {
+        if (preloadRunnable != null) {
+            preloadHandler.removeCallbacks(preloadRunnable);
+        }
+
+        preloadRunnable = new Runnable() {
+            @Override
+            public void run() {
+                performIntelligentPreloading();
+            }
+        };
+
+        preloadHandler.postDelayed(preloadRunnable, 100);
+    }
+
+    private void performIntelligentPreloading() {
+        if (isPreloading || pagerProxy == null) {
+            return;
+        }
+
+        isPreloading = true;
+        int currentPage = pagerProxy.getCurrentPage();
+        int totalPages = pagerProxy.getViewProxies().size();
+        int cacheSize = pagerProxy.getCacheSize();
+
+        Log.d(TAG, "Starting intelligent pre-loading from page " + currentPage);
+
+        int preloadStart, preloadEnd;
+
+        if (lastScrollDirection > 0) {
+            preloadStart = currentPage + cacheSize;
+            preloadEnd = Math.min(totalPages - 1, currentPage + cacheSize + 2);
+            Log.d(TAG, "Pre-loading DOWN: pages " + preloadStart + " to " + preloadEnd);
+        } else if (lastScrollDirection < 0) {
+            preloadStart = Math.max(0, currentPage - cacheSize - 2);
+            preloadEnd = currentPage - cacheSize;
+            Log.d(TAG, "Pre-loading UP: pages " + preloadStart + " to " + preloadEnd);
+        } else {
+            preloadStart = Math.max(0, currentPage - cacheSize - 1);
+            preloadEnd = Math.min(totalPages - 1, currentPage + cacheSize + 1);
+            Log.d(TAG, "Pre-loading BOTH: pages " + preloadStart + " to " + preloadEnd);
+        }
+
+        preloadViewsInRange(preloadStart, preloadEnd, 0);
+    }
+
+    private void preloadViewsInRange(final int start, final int end, final int delay) {
+        if (start > end || start < 0) {
+            isPreloading = false;
+            return;
+        }
+
+        preloadHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    TiViewProxy viewProxy = pagerProxy.getViewProxies().get(start);
+
+                    if (viewProxy != null) {
+                        Log.d(TAG, "Pre-loading view at position " + start);
+
+                        if (viewProxy.getParent() == null) {
+                            viewProxy.setParent(pagerProxy);
+                        }
+
+                        viewProxy.getOrCreateView();
+
+                        Log.d(TAG, "View " + start + " pre-loaded successfully");
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error pre-loading view " + start + ": " + e.getMessage());
+                }
+
+                if (start < end) {
+                    preloadViewsInRange(start + 1, end, 50); // 50ms entre cada
+                } else {
+                    isPreloading = false;
+                    Log.d(TAG, "Pre-loading complete");
+                }
+            }
+        }, delay);
+    }
+
+    private void cancelPreloading() {
+        if (preloadRunnable != null) {
+            preloadHandler.removeCallbacks(preloadRunnable);
+        }
+        preloadHandler.removeCallbacksAndMessages(null);
+        isPreloading = false;
+    }
+
     @Override
     public void processProperties(KrollDict properties) {
         super.processProperties(properties);
@@ -204,8 +309,7 @@ public class TiVerticalPagerView extends TiUIView {
             return;
         }
 
-        // ⬇️⬇️⬇️ CORREÇÃO: Aceita tanto KrollDict quanto HashMap ⬇️⬇️⬇️
-        KrollDict pageIndicatorDict = null;
+        KrollDict pageIndicatorDict;
 
         if (config instanceof KrollDict) {
             Log.d(TAG, "Config is KrollDict");
@@ -245,6 +349,30 @@ public class TiVerticalPagerView extends TiUIView {
         if (indicatorType == 1) {
             Log.d(TAG, "Calling setupVerticalPageIndicator()");
             setupVerticalPageIndicator();
+
+            if (pageIndicatorView instanceof TiVerticalPagerIndicator indicator) {
+
+                if (pageIndicatorConfig.containsKey("normalDotSize")) {
+                    float size = TiConvert.toFloat(pageIndicatorConfig.get("normalDotSize"), 6f);
+                    indicator.setNormalDotSize(size);
+                }
+
+                if (pageIndicatorConfig.containsKey("activeDotSize")) {
+                    float size = TiConvert.toFloat(pageIndicatorConfig.get("activeDotSize"), 8f);
+                    indicator.setActiveDotSize(size);
+                }
+
+                if (pageIndicatorConfig.containsKey("minDotSize")) {
+                    float size = TiConvert.toFloat(pageIndicatorConfig.get("minDotSize"), 3f);
+                    indicator.setMinDotSize(size);
+                }
+
+                if (pageIndicatorConfig.containsKey("dotSpacing")) {
+                    float spacing = TiConvert.toFloat(pageIndicatorConfig.get("dotSpacing"), 16f);
+                    indicator.setDotSpacing(spacing);
+                }
+            }
+
         } else {
             Log.d(TAG, "Calling setupHorizontalPageIndicator()");
             setupHorizontalPageIndicator();
@@ -461,6 +589,8 @@ public class TiVerticalPagerView extends TiUIView {
     @Override
     public void release() {
         Log.d(TAG, "Release called");
+
+        cancelPreloading();
 
         if (viewPager != null && pageChangeCallback != null) {
             viewPager.unregisterOnPageChangeCallback(pageChangeCallback);

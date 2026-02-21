@@ -16,6 +16,10 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
 @property (nonatomic, assign) BOOL isScrolling;
 @property (nonatomic, strong) NSDictionary *pageIndicatorConfig;
 @property (nonatomic, assign) NSInteger indicatorType;
+@property (nonatomic, assign) NSInteger lastScrollDirection; // -1 = up, 0 = none, 1 = down
+@property (nonatomic, assign) CGFloat lastScrollOffset;
+@property (nonatomic, strong) NSTimer *preloadTimer;
+@property (nonatomic, assign) BOOL isPreloading;
 @end
 
 @implementation TiVerticalpagerView
@@ -27,6 +31,9 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
         _cachedCells = [NSMutableDictionary dictionary];
         _isScrolling = NO;
         _indicatorType = 0; // HORIZONTAL
+        _lastScrollDirection = 0;
+        _lastScrollOffset = 0;
+        _isPreloading = NO;
         
         [self setupCollectionView];
     }
@@ -341,6 +348,12 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
+    CGFloat currentOffset = scrollView.contentOffset.y;
+    if (currentOffset != self.lastScrollOffset) {
+        self.lastScrollDirection = currentOffset > self.lastScrollOffset ? 1 : -1;
+        self.lastScrollOffset = currentOffset;
+    }
+    
     if ([self.proxy _hasListeners:@"scroll"]) {
         CGFloat pageHeight = scrollView.bounds.size.height;
         CGFloat currentPosition = scrollView.contentOffset.y / pageHeight;
@@ -382,7 +395,6 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
     if (newPage != oldPage && newPage >= 0 && newPage < proxy.viewProxies.count) {
         proxy.currentPage = newPage;
         
-        // Atualiza o pageControl
         if (self.pageControl) {
             self.pageControl.currentPage = newPage;
         }
@@ -414,6 +426,7 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
     }
     
     [self manageCacheForPage:proxy.currentPage];
+    [self schedulePreloading];
 }
 
 - (void)manageCacheForPage:(NSInteger)currentPage
@@ -446,8 +459,106 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
     }
 }
 
+#pragma mark - Intelligent Pre-loading
+
+- (void)schedulePreloading
+{
+    if (self.preloadTimer) {
+        [self.preloadTimer invalidate];
+        self.preloadTimer = nil;
+    }
+    
+    self.preloadTimer = [NSTimer scheduledTimerWithTimeInterval:0.1
+                                                         target:self
+                                                       selector:@selector(performIntelligentPreloading)
+                                                       userInfo:nil
+                                                        repeats:NO];
+}
+
+- (void)performIntelligentPreloading
+{
+    if (self.isPreloading) {
+        return;
+    }
+    
+    self.isPreloading = YES;
+    
+    TiVerticalpagerViewProxy *proxy = (TiVerticalpagerViewProxy *)self.proxy;
+    NSInteger currentPage = proxy.currentPage;
+    NSInteger totalPages = proxy.viewProxies.count;
+    NSInteger cacheSize = proxy.cacheSize;
+    
+    NSLog(@"[TiVerticalPager] Starting intelligent pre-loading from page %ld", (long)currentPage);
+    
+    NSInteger preloadStart, preloadEnd;
+    
+    if (self.lastScrollDirection > 0) {
+        preloadStart = currentPage + cacheSize;
+        preloadEnd = MIN(totalPages - 1, currentPage + cacheSize + 2);
+        NSLog(@"[TiVerticalPager] Pre-loading DOWN: pages %ld to %ld", (long)preloadStart, (long)preloadEnd);
+    } else if (self.lastScrollDirection < 0) {
+        preloadStart = MAX(0, currentPage - cacheSize - 2);
+        preloadEnd = currentPage - cacheSize;
+        NSLog(@"[TiVerticalPager] Pre-loading UP: pages %ld to %ld", (long)preloadStart, (long)preloadEnd);
+    } else {
+        preloadStart = MAX(0, currentPage - cacheSize - 1);
+        preloadEnd = MIN(totalPages - 1, currentPage + cacheSize + 1);
+        NSLog(@"[TiVerticalPager] Pre-loading BOTH: pages %ld to %ld", (long)preloadStart, (long)preloadEnd);
+    }
+    
+    [self preloadViewsInRangeFrom:preloadStart to:preloadEnd currentIndex:preloadStart];
+}
+
+- (void)preloadViewsInRangeFrom:(NSInteger)start to:(NSInteger)end currentIndex:(NSInteger)index
+{
+    if (index > end || index < 0) {
+        self.isPreloading = NO;
+        NSLog(@"[TiVerticalPager] Pre-loading complete");
+        return;
+    }
+    
+    TiVerticalpagerViewProxy *proxy = (TiVerticalpagerViewProxy *)self.proxy;
+    
+    if (index < proxy.viewProxies.count) {
+        @try {
+            TiViewProxy *viewProxy = proxy.viewProxies[index];
+            
+            if (viewProxy) {
+                NSLog(@"[TiVerticalPager] Pre-loading view at position %ld", (long)index);
+                
+                if (viewProxy.parent == nil) {
+                    [viewProxy setParent:proxy];
+                }
+                
+                [viewProxy view];
+                
+                NSLog(@"[TiVerticalPager] View %ld pre-loaded successfully", (long)index);
+            }
+        }
+        @catch (NSException *exception) {
+            NSLog(@"[TiVerticalPager] Error pre-loading view %ld: %@", (long)index, exception);
+        }
+    }
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self preloadViewsInRangeFrom:start to:end currentIndex:index + 1];
+    });
+}
+
+- (void)cancelPreloading
+{
+    if (self.preloadTimer) {
+        [self.preloadTimer invalidate];
+        self.preloadTimer = nil;
+    }
+    self.isPreloading = NO;
+}
+
+#pragma mark - Dealloc
+
 - (void)dealloc
 {
+    [self cancelPreloading];
     self.collectionView.delegate = nil;
     self.collectionView.dataSource = nil;
 }

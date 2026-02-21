@@ -1,5 +1,6 @@
 package ti.verticalpager;
 
+import android.widget.TextView;
 import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
@@ -56,7 +57,26 @@ public class TiVerticalPagerAdapter extends RecyclerView.Adapter<TiVerticalPager
             }
 
             // Get or create the view
-            TiUIView tiView = viewProxy.getOrCreateView();
+            TiUIView tiView;
+            try {
+                tiView = viewProxy.getOrCreateView();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to create view at position " + position + ": " + e.getMessage(), e);
+
+                TextView errorView = new TextView(holder.container.getContext());
+                errorView.setText("Error loading view at position " + position);
+                errorView.setTextColor(0xFFFF0000); // Vermelho
+                errorView.setGravity(android.view.Gravity.CENTER);
+
+                ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                );
+                errorView.setLayoutParams(params);
+                holder.container.addView(errorView);
+                return;
+            }
+
             if (tiView == null) {
                 Log.w(TAG, "TiUIView is null at position: " + position);
                 return;
@@ -71,7 +91,11 @@ public class TiVerticalPagerAdapter extends RecyclerView.Adapter<TiVerticalPager
 
             ViewGroup currentParent = (ViewGroup) nativeView.getParent();
             if (currentParent != null) {
-                currentParent.removeView(nativeView);
+                try {
+                    currentParent.removeView(nativeView);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error removing view from parent: " + e.getMessage());
+                }
             }
 
             // Set layout params

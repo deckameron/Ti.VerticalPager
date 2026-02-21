@@ -13,14 +13,14 @@ public class TiVerticalPagerIndicator extends View {
 
     private int numberOfPages = 0;
     private int currentPage = 0;
-    private float currentPositionOffset = 0f; // ⬅️ NOVO
+    private float currentPositionOffset = 0f;
     private int pageIndicatorColor = 0x80FFFFFF;
     private int currentPageIndicatorColor = 0xFFFFFFFF;
 
-    private final float normalDotSize = 6f;
-    private final float activeDotSize = 8f;
-    private final float minDotSize = 3f;
-    private final float dotSpacing = 16f;
+    private float normalDotSize = 6f;
+    private float activeDotSize = 8f;
+    private float minDotSize = 3f;
+    private float dotSpacing = 16f;
 
     private Paint paint;
 
@@ -60,6 +60,30 @@ public class TiVerticalPagerIndicator extends View {
 
     public void setCurrentPageIndicatorColor(int color) {
         this.currentPageIndicatorColor = color;
+        invalidate();
+    }
+
+    public void setNormalDotSize(float size) {
+        this.normalDotSize = size;
+        requestLayout();
+        invalidate();
+    }
+
+    public void setActiveDotSize(float size) {
+        this.activeDotSize = size;
+        requestLayout();
+        invalidate();
+    }
+
+    public void setMinDotSize(float size) {
+        this.minDotSize = size;
+        requestLayout();
+        invalidate();
+    }
+
+    public void setDotSpacing(float spacing) {
+        this.dotSpacing = spacing;
+        requestLayout();
         invalidate();
     }
 
