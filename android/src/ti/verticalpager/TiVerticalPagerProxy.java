@@ -149,6 +149,19 @@ public class TiVerticalPagerProxy extends TiViewProxy{
         }
     }
 
+    private String getScrollDirectionString() {
+        TiVerticalPagerView view = (TiVerticalPagerView) peekView();
+        if (view != null) {
+            int direction = view.getScrollDirection();
+            if (direction > 0) {
+                return "down";
+            } else if (direction < 0) {
+                return "up";
+            }
+        }
+        return "none";
+    }
+
     @Kroll.getProperty
     public Object[] getViews() {
         return viewProxies.toArray();
@@ -277,6 +290,7 @@ public class TiVerticalPagerProxy extends TiViewProxy{
         if (hasListeners("scrollstart")) {
             KrollDict data = new KrollDict();
             data.put("currentPage", currentPage);
+            data.put("direction", getScrollDirectionString());
             fireEvent("scrollstart", data);
         }
     }
@@ -286,6 +300,7 @@ public class TiVerticalPagerProxy extends TiViewProxy{
             KrollDict data = new KrollDict();
             data.put("currentPage", currentPageEstimate);
             data.put("offset", offset);
+            data.put("direction", getScrollDirectionString());
             fireEvent("scroll", data);
         }
     }

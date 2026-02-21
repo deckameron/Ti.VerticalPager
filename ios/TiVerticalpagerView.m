@@ -340,7 +340,8 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
         if ([self.proxy _hasListeners:@"scrollstart"]) {
             TiVerticalpagerViewProxy *proxy = (TiVerticalpagerViewProxy *)self.proxy;
             [self.proxy fireEvent:@"scrollstart" withObject:@{
-                @"currentPage": @(proxy.currentPage)
+                @"currentPage": @(proxy.currentPage),
+                @"direction": [self scrollDirectionString]
             }];
         }
     }
@@ -360,7 +361,8 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
         
         [self.proxy fireEvent:@"scroll" withObject:@{
             @"currentPage": @((NSInteger)round(currentPosition)),
-            @"offset": @(scrollView.contentOffset.y)
+            @"offset": @(scrollView.contentOffset.y),
+            @"direction": [self scrollDirectionString]
         }];
     }
 }
@@ -456,6 +458,17 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
         if (![pagesToKeep containsObject:pageNumber]) {
             [self.cachedCells removeObjectForKey:pageNumber];
         }
+    }
+}
+
+- (NSString *)scrollDirectionString
+{
+    if (self.lastScrollDirection > 0) {
+        return @"down";
+    } else if (self.lastScrollDirection < 0) {
+        return @"up";
+    } else {
+        return @"none";
     }
 }
 

@@ -283,6 +283,10 @@ public class TiVerticalPagerView extends TiUIView {
         isPreloading = false;
     }
 
+    public int getScrollDirection() {
+        return lastScrollDirection;
+    }
+
     @Override
     public void processProperties(KrollDict properties) {
         super.processProperties(properties);
