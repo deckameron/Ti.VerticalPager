@@ -114,6 +114,7 @@ public class TiVerticalPagerView extends TiUIView {
                 if (state == ViewPager2.SCROLL_STATE_DRAGGING && !isScrolling) {
                     isScrolling = true;
                     lastScrollDirection = 0;
+                    lastPositionOffset = 0f;
                     pagerProxy.fireScrollStartEvent();
                 } else if (state == ViewPager2.SCROLL_STATE_IDLE && isScrolling) {
                     isScrolling = false;

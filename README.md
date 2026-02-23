@@ -1,6 +1,6 @@
 # Ti.VerticalPager
 
-A native iOS module for Titanium that provides a vertical scrolling pager view with TikTok/Reels-style snap behavior.
+A native module for Titanium that provides a vertical scrolling pager view with TikTok/Reels-style snap behavior.
 
 ![Titanium](https://img.shields.io/badge/Titanium-13.0+-red.svg) ![Platform](https://img.shields.io/badge/platform-iOS-lightgrey.svg) ![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Maintained](https://img.shields.io/badge/Maintained-Yes-green.svg)
 
@@ -13,7 +13,7 @@ A native iOS module for Titanium that provides a vertical scrolling pager view w
 ### Roadmap
 
 - [x] iOS support
-- [ ] Android support
+- [x] Android support
 
 ## Features
 
@@ -27,16 +27,16 @@ A native iOS module for Titanium that provides a vertical scrolling pager view w
 - ✅ **Complete event system**: scrollstart, scroll, scrollend, change
 - ✅ **Programmatic navigation**: scrollToPage(), addView(), removeView()
 - ✅ **Dynamic properties**: Update colors and configuration at runtime
-- ✅ **Native performance**: Built on top of UICollectionView
+- ✅ **Native performance**: Built on top of UICollectionView (iOS) and ViewPager2 (Android)
 
 ## Installation
 
-1.  Copy the module to your project's  `modules/iphone/`  folder
+1.  Copy the module to your project's  `modules/iphone/`  and/or `modules/android/` folder
 2.  Add to  `tiapp.xml`:
 
 ```xml
 <modules>
-    <module platform="iphone">ti.verticalpager</module>
+    <module>ti.verticalpager</module>
 </modules>
 
 ```

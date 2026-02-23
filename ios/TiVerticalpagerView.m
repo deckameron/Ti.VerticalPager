@@ -358,10 +358,13 @@ static NSString * const CellIdentifier = @"VerticalPagerCell";
     if ([self.proxy _hasListeners:@"scroll"]) {
         CGFloat pageHeight = scrollView.bounds.size.height;
         CGFloat currentPosition = scrollView.contentOffset.y / pageHeight;
+        NSInteger currentPage = (NSInteger)floor(currentPosition);
+        
+        CGFloat relativeOffset = scrollView.contentOffset.y - (currentPage * pageHeight);
         
         [self.proxy fireEvent:@"scroll" withObject:@{
-            @"currentPage": @((NSInteger)round(currentPosition)),
-            @"offset": @(scrollView.contentOffset.y),
+            @"currentPage": @(currentPage),
+            @"offset": @(relativeOffset),
             @"direction": [self scrollDirectionString]
         }];
     }
